@@ -347,18 +347,24 @@
             color: #2c3e50;
         }
 
-        .form-group input, .form-group select {
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e9ecef;
             border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s ease;
+            font-family: inherit;
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
         .modal-buttons {
@@ -395,6 +401,9 @@
             <button class="btn btn-success" onclick="addArrow()">➡️ Aggiungi Freccia</button>
             <button class="btn btn-warning" onclick="editSelected()">✏️ Modifica Selezionato</button>
             <button class="btn btn-danger" onclick="deleteSelected()">🗑️ Elimina Selezionato</button>
+            <button class="btn btn-primary" onclick="editDescriptions()">📝 Modifica Descrizioni</button>
+            <button class="btn btn-success" onclick="exportDescriptions()">📤 Esporta Descrizioni</button>
+            <button class="btn btn-warning" onclick="importDescriptions()">📥 Importa Descrizioni</button>
             <button class="btn btn-primary" onclick="saveDiagram()">💾 Salva Diagramma</button>
             <button class="btn btn-success" onclick="loadDiagram()">📂 Carica Diagramma</button>
             <button class="btn btn-warning" onclick="resetDiagram()">🔄 Reset</button>
@@ -496,6 +505,71 @@
             <div class="modal-buttons">
                 <button class="btn btn-danger" onclick="closeModal()">❌ Annulla</button>
                 <button class="btn btn-success" onclick="saveArrow()">✅ Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per modificare descrizioni -->
+    <div id="descriptionModal" class="modal">
+        <div class="modal-content">
+            <h2>Modifica Descrizioni</h2>
+            <div class="form-group">
+                <label for="descriptionNodeSelect">Seleziona Nodo:</label>
+                <select id="descriptionNodeSelect">
+                    <!-- Popolato dinamicamente -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="descriptionTitle">Titolo:</label>
+                <input type="text" id="descriptionTitle" placeholder="Inserisci il titolo">
+            </div>
+            <div class="form-group">
+                <label for="descriptionText">Descrizione Principale:</label>
+                <textarea id="descriptionText" rows="4" placeholder="Inserisci la descrizione principale"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="descriptionPeriod">Periodo (opzionale):</label>
+                <input type="text" id="descriptionPeriod" placeholder="es. 753 a.C. - 476 d.C.">
+            </div>
+            <div class="form-group">
+                <label for="descriptionFeatures">Caratteristiche (opzionale):</label>
+                <input type="text" id="descriptionFeatures" placeholder="es. Archi, Volte, Cupole">
+            </div>
+            <div class="form-group">
+                <label for="descriptionFunction">Funzione (opzionale):</label>
+                <input type="text" id="descriptionFunction" placeholder="es. Centro politico e religioso">
+            </div>
+            <div class="form-group">
+                <label for="descriptionPurpose">Scopo (opzionale):</label>
+                <input type="text" id="descriptionPurpose" placeholder="es. Propaganda politica">
+            </div>
+            <div class="form-group">
+                <label for="descriptionType">Tipo (opzionale):</label>
+                <input type="text" id="descriptionType" placeholder="es. Ritratti scultorei">
+            </div>
+            <div class="form-group">
+                <label for="descriptionTechnique">Tecnica (opzionale):</label>
+                <input type="text" id="descriptionTechnique" placeholder="es. Pittura su intonaco fresco">
+            </div>
+            <div class="form-group">
+                <label for="descriptionMedium">Supporto (opzionale):</label>
+                <input type="text" id="descriptionMedium" placeholder="es. Tavola, Tela, Legno">
+            </div>
+            <div class="form-group">
+                <label for="descriptionLocation">Ubicazione (opzionale):</label>
+                <input type="text" id="descriptionLocation" placeholder="es. Pavimenti, Pareti">
+            </div>
+            <div class="form-group">
+                <label for="descriptionMaterial">Materiale (opzionale):</label>
+                <input type="text" id="descriptionMaterial" placeholder="es. Marmo, Travertino">
+            </div>
+            <div class="form-group">
+                <label for="descriptionExample">Esempio (opzionale):</label>
+                <input type="text" id="descriptionExample" placeholder="es. Villa del Casale">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="closeModal()">❌ Annulla</button>
+                <button class="btn btn-success" onclick="saveDescription()">✅ Salva Descrizione</button>
             </div>
         </div>
     </div>
@@ -1168,6 +1242,7 @@
         function closeModal() {
             document.getElementById('nodeModal').style.display = 'none';
             document.getElementById('arrowModal').style.display = 'none';
+            document.getElementById('descriptionModal').style.display = 'none';
         }
 
         function saveDiagram() {
@@ -1215,6 +1290,168 @@
                 selectedNode = null;
                 render();
             }
+        }
+
+        // Funzioni per modificare le descrizioni
+        function editDescriptions() {
+            const select = document.getElementById('descriptionNodeSelect');
+            select.innerHTML = '';
+            
+            nodes.forEach(node => {
+                const option = document.createElement('option');
+                option.value = node.id;
+                option.textContent = `${node.text} (ID: ${node.id})`;
+                select.appendChild(option);
+            });
+
+            // Se c'è un nodo selezionato, selezionalo nel dropdown
+            if (selectedNode) {
+                select.value = selectedNode.id;
+                loadNodeDescription(selectedNode.id);
+            } else {
+                // Altrimenti carica la descrizione del primo nodo
+                if (nodes.length > 0) {
+                    select.value = nodes[0].id;
+                    loadNodeDescription(nodes[0].id);
+                }
+            }
+
+            document.getElementById('descriptionModal').style.display = 'block';
+        }
+
+        function loadNodeDescription(nodeId) {
+            const info = nodeInfo[nodeId];
+            if (info) {
+                document.getElementById('descriptionTitle').value = info.title || '';
+                document.getElementById('descriptionText').value = info.description || '';
+                document.getElementById('descriptionPeriod').value = info.period || '';
+                document.getElementById('descriptionFeatures').value = info.features || '';
+                document.getElementById('descriptionFunction').value = info.function || '';
+                document.getElementById('descriptionPurpose').value = info.purpose || '';
+                document.getElementById('descriptionType').value = info.type || '';
+                document.getElementById('descriptionTechnique').value = info.technique || '';
+                document.getElementById('descriptionMedium').value = info.medium || '';
+                document.getElementById('descriptionLocation').value = info.location || '';
+                document.getElementById('descriptionMaterial').value = info.material || '';
+                document.getElementById('descriptionExample').value = info.example || '';
+            } else {
+                // Pulisci tutti i campi se non ci sono informazioni
+                document.getElementById('descriptionTitle').value = '';
+                document.getElementById('descriptionText').value = '';
+                document.getElementById('descriptionPeriod').value = '';
+                document.getElementById('descriptionFeatures').value = '';
+                document.getElementById('descriptionFunction').value = '';
+                document.getElementById('descriptionPurpose').value = '';
+                document.getElementById('descriptionType').value = '';
+                document.getElementById('descriptionTechnique').value = '';
+                document.getElementById('descriptionMedium').value = '';
+                document.getElementById('descriptionLocation').value = '';
+                document.getElementById('descriptionMaterial').value = '';
+                document.getElementById('descriptionExample').value = '';
+            }
+        }
+
+        function saveDescription() {
+            const nodeId = parseInt(document.getElementById('descriptionNodeSelect').value);
+            const title = document.getElementById('descriptionTitle').value.trim();
+            const description = document.getElementById('descriptionText').value.trim();
+            const period = document.getElementById('descriptionPeriod').value.trim();
+            const features = document.getElementById('descriptionFeatures').value.trim();
+            const function_ = document.getElementById('descriptionFunction').value.trim();
+            const purpose = document.getElementById('descriptionPurpose').value.trim();
+            const type = document.getElementById('descriptionType').value.trim();
+            const technique = document.getElementById('descriptionTechnique').value.trim();
+            const medium = document.getElementById('descriptionMedium').value.trim();
+            const location = document.getElementById('descriptionLocation').value.trim();
+            const material = document.getElementById('descriptionMaterial').value.trim();
+            const example = document.getElementById('descriptionExample').value.trim();
+
+            if (!title || !description) {
+                alert('Il titolo e la descrizione principale sono obbligatori');
+                return;
+            }
+
+            // Crea o aggiorna l'oggetto delle informazioni del nodo
+            const nodeInfoObj = {
+                title: title,
+                description: description
+            };
+
+            // Aggiungi campi opzionali solo se non vuoti
+            if (period) nodeInfoObj.period = period;
+            if (features) nodeInfoObj.features = features;
+            if (function_) nodeInfoObj.function = function_;
+            if (purpose) nodeInfoObj.purpose = purpose;
+            if (type) nodeInfoObj.type = type;
+            if (technique) nodeInfoObj.technique = technique;
+            if (medium) nodeInfoObj.medium = medium;
+            if (location) nodeInfoObj.location = location;
+            if (material) nodeInfoObj.material = material;
+            if (example) nodeInfoObj.example = example;
+
+            // Aggiorna nodeInfo
+            nodeInfo[nodeId] = nodeInfoObj;
+
+            // Salva nel localStorage
+            localStorage.setItem('nodeInfo', JSON.stringify(nodeInfo));
+
+            alert('Descrizione salvata con successo!');
+            closeModal();
+        }
+
+        // Event listener per cambiare nodo nel modal delle descrizioni
+        document.addEventListener('DOMContentLoaded', function() {
+            const descriptionNodeSelect = document.getElementById('descriptionNodeSelect');
+            if (descriptionNodeSelect) {
+                descriptionNodeSelect.addEventListener('change', function() {
+                    const nodeId = parseInt(this.value);
+                    loadNodeDescription(nodeId);
+                });
+            }
+        });
+
+        // Funzioni per esportare e importare descrizioni
+        function exportDescriptions() {
+            const data = JSON.stringify(nodeInfo, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'descrizioni_arte_romana.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            alert('Descrizioni esportate con successo!');
+        }
+
+        function importDescriptions() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const importedNodeInfo = JSON.parse(e.target.result);
+                            
+                            // Unisci le descrizioni importate con quelle esistenti
+                            Object.assign(nodeInfo, importedNodeInfo);
+                            
+                            // Salva nel localStorage
+                            localStorage.setItem('nodeInfo', JSON.stringify(nodeInfo));
+                            
+                            alert('Descrizioni importate con successo!');
+                            console.log('Descrizioni importate:', importedNodeInfo);
+                        } catch (error) {
+                            alert('Errore nell\'importazione del file');
+                            console.error('Errore importazione:', error);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
         }
 
                  // Funzioni per il popup informativo
@@ -1328,13 +1565,26 @@
             render();
         }
 
-                 // Inizializza il diagramma
-         init();
+                         // Inizializza il diagramma
+        init();
 
-         // Rendi le funzioni disponibili globalmente
-         window.showInfoPopupById = showInfoPopupById;
-         window.showInfoPopup = showInfoPopup;
-         window.closeInfoPopup = closeInfoPopup;
+        // Carica le descrizioni salvate dal localStorage
+        const savedNodeInfo = localStorage.getItem('nodeInfo');
+        if (savedNodeInfo) {
+            try {
+                const loadedNodeInfo = JSON.parse(savedNodeInfo);
+                // Unisci le descrizioni caricate con quelle predefinite
+                Object.assign(nodeInfo, loadedNodeInfo);
+                console.log('Descrizioni caricate dal localStorage');
+            } catch (error) {
+                console.error('Errore nel caricamento delle descrizioni:', error);
+            }
+        }
+
+        // Rendi le funzioni disponibili globalmente
+        window.showInfoPopupById = showInfoPopupById;
+        window.showInfoPopup = showInfoPopup;
+        window.closeInfoPopup = closeInfoPopup;
          
          // Test delle funzioni globali
          console.log('Funzioni globali esposte:');
